@@ -1,8 +1,5 @@
 import argparse
 import ast
-import tokenize
-import re
-
 import numpy as np
 
 
@@ -25,26 +22,6 @@ def LevenshteinDistance(code1, code2):
 
     return array[-1][-1]
 
-class DictVisitor(ast.NodeVisitor):
-
-    def visit_Dict(self,node):
-        print('Node type: Dict\nFields: ', node._fields)
-        ast.NodeVisitor.generic_visit(self, node)
-
-
-    def visit_Constant(self,node):
-        print('Node type: Constant\nFields: ', node._fields)
-        ast.NodeVisitor.generic_visit(self, node)
-
-
-class Visitor(ast.NodeVisitor):
-
-    def visit(self, node: ast.AST):
-        list1 = []
-        list1.append(ast.dump(node))
-        self.generic_visit(node)
-        return list1
-
 
 def input_file_proc(name: str) -> list:
     """Processing of input file and get a list of file pairs for comparison"""
@@ -58,60 +35,74 @@ def input_file_proc(name: str) -> list:
 
 
 def file_proc(file_path: str):
-    print(file_path)
     with open(file_path) as file:
         code = file.read()
 
     node = ast.parse(code)
-    print(ast.dump(node, indent=4, ))
-    list1 = Visitor().visit(node)
-    # print(len(list1))
-    # print(node)
-    # print(node._fields)
-    # print(node.body)
     list_text = []
     for i in node.body:
         list_text.append(ast.dump(i))
-        ast.dump(i)
-    print(list_text)
     return list_text
-    # print(node.body[0]._fields)
-    # json_code = ast.dump(node)
-    # print(json_code)
-    # print(type(json_code))
+
 
 
 def compare(list_pair: list, file_name: str):
-    for pair in list_pair:
+
+    list_scores = []  # list for write all scores
+
+    for pair in list_pair:  # compare pairs of files
         file_path_text1 = pair[0]
         file_path_text2 = pair[1]
-        list1 = file_proc(file_path_text1)
-        list2 = file_proc(file_path_text2)
-        for i in range(len(list2)):
-            if list1[i] != list2[i]:
-                print(sorted(list1[i].split(',')))
-                print(sorted(list2[i].split(',')))
-                word1 = " ".join(sorted(list1[i].split(',')))
-                word2 = " ".join(sorted(list2[i].split(',')))
-                print(LevenshteinDistance(word1,word2) , len(word1))
-        break
+        list1 = sorted(file_proc(file_path_text1))  # get code1
+        list2 = sorted(file_proc(file_path_text2))  # get code2
+
+        len_list1 = len(list1)  # parts of code1
+        len_list2 = len(list2)  # parts of code2
+
+        """Equalize the length"""
+        if len_list1 > len_list2:
+            for i in range(len_list1 - len_list2):
+                list2.append([])
+
+        elif len_list1 < len_list2:
+            for i in range(len_list2 - len_list1):
+                list1.append([])
+
+        list_similarity = []
+        for i in range(max(len(list1), len(list2))):
+
+            if list1[i] != list2[i] and list1[i] != [] and list2[i] != []:
+                code1 = " ".join(sorted(list1[i].split(',')))
+                code2 = " ".join(sorted(list2[i].split(',')))
+                similarity = 1 - (LevenshteinDistance(code1, code2) / max(len(code1), len(code2)))
+                list_similarity.append(similarity)
+
+        for i in range(min(len_list1,len_list2) - len(list_similarity)):
+            list_similarity.append(1)
+
+        list_scores.append(sum(list_similarity) / len(list_similarity))
+
+        with open(file_name,"w", encoding= "utf-8") as file:
+            for score in list_scores:
+                file.write(str(score) + '\n')
+
+        print(list_scores)
 
 
-# parser = argparse.ArgumentParser()
-#
-# parser.add_argument("input_file", help='File for input')
-# parser.add_argument("output_file", help='File for output')
-#
-# args = parser.parse_args()
-#
-# input_file = args.input_file
-# output_file = args.output_file
+parser = argparse.ArgumentParser()
+
+parser.add_argument("input_file", help='File for input')
+parser.add_argument("output_file", help='File for output')
+
+args = parser.parse_args()
+
+input_file = args.input_file
+output_file = args.output_file
 
 
-# input_file = "input.txt"
-# output_file = "output.txt"
-# list_files = input_file_proc(input_file)
-#
-# compare(list_files, output_file)
+input_file = "input.txt"
+output_file = "output.txt"
+list_files = input_file_proc(input_file)
 
+compare(list_files, output_file)
 
