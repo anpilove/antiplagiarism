@@ -1,15 +1,17 @@
 import argparse
-
 import numpy
 import ast
 import tokenize
 import re
 
+
 class Visitor(ast.NodeVisitor):
 
-    def visit_For(self, node: ast.AST):
-        print(node)
+    def visit(self, node: ast.AST):
+        list1 = []
+        list1.append(ast.dump(node))
         self.generic_visit(node)
+        return list1
 
 
 def input_file_proc(name: str) -> list:
@@ -29,22 +31,35 @@ def file_proc(file_name: str):
         code = file.read()
 
     node = ast.parse(code)
-    print(node)
-    print(node._fields)
-    print(node.body)
-    print(node.body[0]._fields)
-    print(ast.dump(node))
+    list1 = Visitor().visit(node)
+    # print(len(list1))
+    # print(node)
+    # print(node._fields)
+    # print(node.body)
+    list_text = []
+    for i in node.body:
+        list_text.append(ast.dump(i))
+        ast.dump(i)
+    print(list_text)
+    return list_text
+    # print(node.body[0]._fields)
+    # json_code = ast.dump(node)
+    # print(json_code)
+    # print(type(json_code))
 
 
-
-def compare(list_pair: list):
+def compare(list_pair: list, file_name: str):
     for pair in list_pair:
         file_path_text1 = pair[0]
         file_path_text2 = pair[1]
-        file_proc(file_path_text1)
-        file_proc(file_path_text2)
+        list1 = file_proc(file_path_text1)
+        list2 = file_proc(file_path_text2)
+        for i in range(len(list2)):
+            if list1[i] != list2[i]:
+                print(list1[i])
+                print(list2[i])
+                print()
         break
-
 
 
 # parser = argparse.ArgumentParser()
@@ -60,4 +75,4 @@ input_file = "input.txt"
 output_file = "output.txt"
 list_files = input_file_proc(input_file)
 
-compare(list_files)
+compare(list_files, output_file)
