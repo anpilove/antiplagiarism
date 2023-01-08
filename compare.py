@@ -86,7 +86,6 @@ def compare(list_pair: list, file_name: str):
             for score in list_scores:
                 file.write(str(score) + '\n')
 
-        print(list_scores)
 
 
 parser = argparse.ArgumentParser()
